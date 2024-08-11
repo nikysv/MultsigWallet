@@ -1,0 +1,156 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract MultiSigWallet {
+    address[] public owners;
+    uint public requiredSignatures;
+
+    struct Transaction {
+        address to;
+        uint value;
+        bytes data;
+        bool executed;
+        uint signatureCount;
+    }
+
+    mapping(uint => mapping(address => bool)) public signatures;
+    Transaction[] public transactions;
+    mapping(address => bool) public isOwner;
+
+    // Eventos
+    event OwnerAdded(address indexed owner);
+    event OwnerRemoved(address indexed owner);
+    event TransactionSubmitted(uint indexed txIndex, address indexed to, uint value);
+    event TransactionSigned(uint indexed txIndex, address indexed owner);
+    event TransactionExecuted(uint indexed txIndex);
+    event RequiredSignaturesUpdated(uint newRequiredSignatures);
+
+    modifier onlyOwner() {
+        require(isOwner[msg.sender], "Not an owner");
+        _;
+    }
+
+    modifier txExists(uint _txIndex) {
+        require(_txIndex < transactions.length, "Transaction does not exist");
+        _;
+    }
+
+    modifier notExecuted(uint _txIndex) {
+        require(!transactions[_txIndex].executed, "Transaction already executed");
+        _;
+    }
+
+    modifier notSigned(uint _txIndex) {
+        require(!signatures[_txIndex][msg.sender], "Transaction already signed by this owner");
+        _;
+    }
+
+    constructor(address[] memory _owners, uint _requiredSignatures) {
+        require(_owners.length > 0, "Owners required");
+        require(_requiredSignatures > 0 && _requiredSignatures <= _owners.length, "Invalid number of required signatures");
+
+        for (uint i = 0; i < _owners.length; i++) {
+            address owner = _owners[i];
+
+            require(owner != address(0), "Invalid owner address");
+            require(!isOwner[owner], "Owner not unique");
+
+            isOwner[owner] = true;
+            owners.push(owner);
+            emit OwnerAdded(owner);
+        }
+        requiredSignatures = _requiredSignatures;
+    }
+
+    // Añadir un nuevo propietario
+    function addOwner(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "Invalid owner address");
+        require(!isOwner[newOwner], "Owner already exists");
+
+        isOwner[newOwner] = true;
+        owners.push(newOwner);
+
+        emit OwnerAdded(newOwner);
+    }
+
+    // Remover un propietario existente
+    function removeOwner(address owner) public onlyOwner {
+        require(isOwner[owner], "Not an owner");
+
+        // Requiere al menos el número mínimo de firmas si se quita un propietario
+        require(owners.length - 1 >= requiredSignatures, "Cannot remove owner, not enough owners left");
+
+        isOwner[owner] = false;
+
+        for (uint i = 0; i < owners.length; i++) {
+            if (owners[i] == owner) {
+                owners[i] = owners[owners.length - 1];
+                owners.pop();
+                break;
+            }
+        }
+
+        emit OwnerRemoved(owner);
+    }
+
+    // Actualizar el número de firmas requeridas
+    function updateRequiredSignatures(uint _newRequiredSignatures) public onlyOwner {
+        require(_newRequiredSignatures > 0 && _newRequiredSignatures <= owners.length, "Invalid number of required signatures");
+        requiredSignatures = _newRequiredSignatures;
+
+        emit RequiredSignaturesUpdated(_newRequiredSignatures);
+    }
+
+    // Crear una nueva transacción
+    function submitTransaction(address _to, uint _value, bytes memory _data) public onlyOwner {
+        uint txIndex = transactions.length;
+
+        transactions.push(Transaction({
+            to: _to,
+            value: _value,
+            data: _data,
+            executed: false,
+            signatureCount: 0
+        }));
+
+        emit TransactionSubmitted(txIndex, _to, _value);
+    }
+
+    // Firmar una transacción
+    function signTransaction(uint _txIndex) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) notSigned(_txIndex) {
+        Transaction storage transaction = transactions[_txIndex];
+        transaction.signatureCount += 1;
+        signatures[_txIndex][msg.sender] = true;
+
+        emit TransactionSigned(_txIndex, msg.sender);
+
+        // Ejecutar automáticamente si se alcanza el número requerido de firmas
+        if (transaction.signatureCount >= requiredSignatures) {
+            executeTransaction(_txIndex);
+        }
+    }
+
+    // Ejecutar una transacción
+    function executeTransaction(uint _txIndex) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
+        Transaction storage transaction = transactions[_txIndex];
+
+        // Verificación explícita de firmas suficientes
+        require(transaction.signatureCount >= requiredSignatures, "Not enough signatures");
+
+        transaction.executed = true;
+
+        (bool success, ) = transaction.to.call{value: transaction.value}(transaction.data);
+        require(success, "Transaction execution failed");
+
+        emit TransactionExecuted(_txIndex);
+    }
+
+    // Obtener detalles de una transacción
+    function getTransaction(uint _txIndex) public view returns (address to, uint value, bytes memory data, bool executed, uint signatureCount) {
+        Transaction storage transaction = transactions[_txIndex];
+        return (transaction.to, transaction.value, transaction.data, transaction.executed, transaction.signatureCount);
+    }
+
+    // Función para recibir ETH
+    receive() external payable {}
+}

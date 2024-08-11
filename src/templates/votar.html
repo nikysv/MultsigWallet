@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    {% block customCSS %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/votestyle.css') }}">
+    {% endblock %}
+
+    <title>Vote</title>
+</head>
+<body>
+
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Votacion</h1>
+                </div>
+            </div>
+            <h3 class="tiempo">Tiempo Restante: 0:02:03</h3>
+            <ul class="box-info">
+                {% for votacion in votaciones %}
+                <li>
+                    <h3>Lucy</h3> <!-- Nombre del usuario -->
+                    <div class="status-{{ 'completed' if votacion[1] else 'process' }}"><span>{{ 'Cumplido' if votacion[1] else 'Espera' }}</span></div> <!-- Estado de votación -->
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div class="table-data">
+                <div class="order">
+                    <div class="head">
+                        <h3>Propuesta de la inversion</h3>
+                    </div>
+                    <div class="info">
+                        <h3>Idea de inversion:</h3>
+                        <p>Transferir fondos para compra de items</p> <!-- Descripción de la propuesta -->
+                        <h3>Dinero requerido</h3>
+                        <p>80$</p>
+                    </div>
+                    <div class="voting-buttons">
+                        <button class="vote-button yes">Sí</button>
+                        <button class="vote-button no">No</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+</body>
+</html>

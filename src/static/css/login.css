@@ -1,0 +1,97 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  transition: background 0.5s ease;
+}
+
+.form-signin {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 350px;
+  padding: 30px;
+  text-align: center;
+  transform: translateY(20px);
+  opacity: 0;
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-signin h1 {
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.form-floating {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.form-floating input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.form-floating label {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  transition: all 0.3s ease;
+  color: #999;
+  pointer-events: none;
+}
+
+.form-floating input:focus,
+.form-floating input:not(:placeholder-shown) {
+  border-color: #6e8efb;
+  outline: none;
+}
+
+.form-floating input:focus + label,
+.form-floating input:not(:placeholder-shown) + label {
+  top: 0;
+  font-size: 12px;
+  color: #6e8efb;
+  background: white;
+  padding: 0 4px;
+}
+
+.btn-signin {
+  width: 100%;
+  padding: 12px;
+  background: #6e8efb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-signin:hover {
+  background: #5a7de9;
+}
+
+.btn-signin:active {
+  transform: scale(0.98);
+}

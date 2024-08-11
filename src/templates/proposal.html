@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Solicitud</title>
+
+    {% block customCSS %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/proposalstyle.css') }}">
+    {% endblock %}
+</head>
+<body>
+
+    <div class="form-container">
+        <h1>Formulario de Solicitud</h1>
+        <form id="myForm" action="{{ url_for('proposal') }}" method="post">
+            <div class="form-group">
+                <label for="destinatario">Para</label>
+                <textarea id="destinatario" name="destinatario" rows="3" placeholder="Ingrese a quien se hará la transacción" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="motivo">Motivo</label>
+                <textarea id="motivo" name="motivo" rows="4" placeholder="Ingrese el motivo aquí" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="dinero-estimado">Dinero Estimado</label>
+                <input type="number" id="dinero-estimado" name="dinero-estimado" placeholder="Ingrese el monto estimado" required>
+            </div>
+            <div class="form-group">
+                <button id="Btn" type="submit">Enviar</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('myForm').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+            
+            var destinatario = document.getElementById('destinatario').value;
+            var motivo = document.getElementById('motivo').value;
+            var dineroEstimado = document.getElementById('dinero-estimado').value;
+
+            if (destinatario !== "" && motivo !== "" && dineroEstimado !== "") {
+                if (!("Notification" in window)) {
+                    alert("Este navegador no soporta notificaciones de escritorio.");
+                }
+                else if (Notification.permission === "granted") {
+                    new Notification("¡Formulario enviado con éxito!");
+                    document.getElementById('myForm').submit(); // Enviar el formulario después de la notificación
+                }
+                else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(function(permission) {
+                        if (permission === "granted") {
+                            new Notification("¡Formulario enviado con éxito!");
+                            document.getElementById('myForm').submit(); // Enviar el formulario después de la notificación
+                        }
+                    });
+                }
+            } else {
+                alert("Por favor, complete todos los campos requeridos.");
+            }
+        });
+    </script>
+
+</body>
+</html>

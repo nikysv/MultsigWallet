@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    
+    <!-- My CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Cripto</title>
+</head>
+<body>
+
+    <section id="content">
+        <nav>
+            <img src="{{ url_for('static', filename='img/people.png') }}" alt="User Image">
+            <h2>Lucy</h2>
+        </nav>
+
+        <main>
+            <div class="head-title">
+                <h1>MultiSig Wallet</h1>
+            </div>
+
+            <div class="box-info">
+                <i class='bx bxs-dollar-circle'></i>
+                <span class="text">
+                    <h3>Saldo actual</h3>
+                    <p id="balance">0 ETH</p> <!-- Mostrará el saldo en ETH -->
+                </span>
+                <a href="{{ url_for('proposal') }}"><button>Proponer</button></a>
+            </div>
+
+            <div class="table-data">
+                <div class="order">
+                    <div class="head">
+                        <h3>historial</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Fecha</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions">
+                            <tr>
+                                <td>
+                                    <img src="{{ url_for('static', filename='img/people.png') }}" alt="User Image">
+                                    <p>John Doe</p>
+                                </td>
+                                <td>01-10-2021</td>
+                                <td><span class="status completed">Retiro para pagos de servicios</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="{{ url_for('static', filename='img/people.png') }}" alt="User Image">
+                                    <p>John Doe</p>
+                                </td>
+                                <td>01-08-2024</td>
+                                <td><span class="status completed">Retiro para compras</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="{{ url_for('static', filename='img/people.png') }}" alt="User Image">
+                                    <p>John Doe</p>
+                                </td>
+                                <td>01-07-2024</td>
+                                <td><span class="status completed">Retiro de emergencia</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <img src="{{ url_for('static', filename='img/people.png') }}" alt="User Image">
+                                    <p>John Doe</p>
+                                </td>
+                                <td>01-06-2024</td>
+                                <td><span class="status completed">Retiro</span></td>
+                            </tr>
+                           
+                        </tbody>
+                    </table>
+                </div>
+                <div class="todo">
+                    <div class="head">
+                        <h3>Notificacion</h3>
+                        <i class='bx bx-plus'></i>
+                        <i class='bx bx-filter'></i>
+                    </div>
+                    <ul class="todo-list">
+                        <li class="completed votacion">
+                            <h2>Votacion en Curso</h2>
+                            <a href="{{ url_for('votar') }}">
+                                <button style="margin-left: 10px; padding: 5px 10px; font-size: 12px;">
+                                    Ir a Votación
+                                </button>
+                            </a>
+                            <i class='bx bx-time-five'></i>
+                        </li>
+                    </ul>
+                    
+                    
+                    
+                </div>
+            </div>
+        </main>
+    </section>
+    
+    <!-- Web3.js -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+    <script type="text/javascript">
+        const etherscanApiKey = "1E6NZ5HQ7K83Q2XZIK7NQWI6EB1FH4EMSK"; // Tu API key de Etherscan
+        let web3;
+
+        // ABI del contrato MultiSigWallet
+        const contractAbi = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "_owners",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_requiredSignatures",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnerAdded",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnerRemoved",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "txIndex",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TransactionSubmitted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "txIndex",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "TransactionSigned",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "txIndex",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TransactionExecuted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newRequiredSignatures",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "RequiredSignaturesUpdated",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "addOwner",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_txIndex",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "executeTransaction",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_txIndex",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getTransaction",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "data",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "executed",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "signatureCount",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "removeOwner",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owners",
+                "outputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "",
+                        "type": "address[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "transactions",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_newRequiredSignatures",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "updateRequiredSignatures",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "_data",
+                        "type": "bytes"
+                    }
+                ],
+                "name": "submitTransaction",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_txIndex",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "signTransaction",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "stateMutability": "payable",
+                "type": "receive"
+            }
+        ];
+
+        // Dirección del contrato desplegado
+        const contractAddress = "0xe528C4eC8a6E255e16258552F424125b1a620F21";
+
+        window.addEventListener('load', async function() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    web3 = new Web3(window.ethereum);
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const accounts = await web3.eth.getAccounts();
+                    console.log("Connected account:", accounts[0]);
+
+                    // Crear instancia del contrato
+                    const contract = new web3.eth.Contract(contractAbi, contractAddress);
+                    console.log("Contract instance created:", contract);
+
+                    // Mostrar saldo de MetaMask
+                    const balanceWei = await web3.eth.getBalance(accounts[0]);
+                    const balanceEth = web3.utils.fromWei(balanceWei, 'ether');
+                    document.getElementById('balance').textContent = balanceEth + ' ETH';
+                    console.log("Balance retrieved:", balanceEth);
+
+                    // Obtener historial de transacciones internas de MetaMask
+                    const transactions = await getInternalTransactions(accounts[0]);
+                    console.log("Internal transactions retrieved:", transactions);
+                    displayTransactions(transactions);
+
+                    // Escuchar y mostrar eventos del contrato
+                    contract.events.TransactionSubmitted({}, function(error, event) {
+                        if (error) {
+                            console.error("Error fetching events", error);
+                            return;
+                        }
+                        console.log("TransactionSubmitted event detected", event);
+                        
+                        const txDetails = {
+                            from: accounts[0],  // Dirección de la cuenta conectada
+                            to: event.returnValues.to,  // Dirección del destinatario de la transacción
+                            txHash: event.transactionHash,  // Hash de la transacción
+                            value: event.returnValues.value,  // Valor de la transacción
+                            status: '0x1'  // Estado de la transacción
+                        };
+                        console.log("Transaction details for table:", txDetails);
+                        addTransactionToTable(txDetails);
+                    });
+                } catch (error) {
+                    console.error("User denied account access", error);
+                }
+            } else {
+                console.error("MetaMask is not installed");
+            }
+        });
+
+        // Función para obtener transacciones internas usando Etherscan API
+        async function getInternalTransactions(address) {
+            const url = `https://api.etherscan.io/api?module=account&action=txlistinternal&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${etherscanApiKey}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            console.log("Etherscan API response:", data); 
+
+            if (Array.isArray(data.result)) {
+                console.log("Transactions array received:", data.result.length, "transactions");
+                return data.result;
+            } else {
+                console.error("Unexpected data format:", data);
+                return [];
+            }
+        }
+
+        // Función para obtener detalles de una transacción usando el hash
+        async function getTransactionDetails(txHash) {
+            try {
+                const transaction = await web3.eth.getTransaction(txHash);
+                const receipt = await web3.eth.getTransactionReceipt(txHash);
+
+                console.log('Transaction details:', transaction);
+                console.log('Transaction receipt:', receipt);
+
+                const gasUsed = receipt.gasUsed;
+                const gasPrice = transaction.gasPrice;
+                const totalGasCostWei = gasUsed * gasPrice;
+                const totalGasCostEth = web3.utils.fromWei(totalGasCostWei.toString(), 'ether');
+
+                console.log('Total gas cost (ETH):', totalGasCostEth);
+
+                // Mostrar los detalles en la tabla
+                const transactionsTable = document.getElementById('transactions');
+                let newRow = transactionsTable.insertRow();
+
+                const nonce = transaction.nonce;
+                const value = `${web3.utils.fromWei(transaction.value, 'ether')} ETH`; // Valor en ETH
+                const gasUsedEth = `${totalGasCostEth} ETH`; // Costo total de gas en ETH
+                const status = receipt.status ? 'Success' : 'Failed'; // Estado de la transacción
+
+                newRow.innerHTML = `
+                    <td><a href="https://etherscan.io/tx/${txHash}" target="_blank">${txHash}</a></td>
+                    <td>${value}</td>
+                    <td>${gasUsedEth}</td>
+                    <td>${status}</td>
+                `;
+                console.log("Transaction added to table:", newRow.innerHTML);
+            } catch (error) {
+                console.error('Error fetching transaction details:', error);
+            }
+        }
+
+        // Función para mostrar transacciones en la tabla
+        function displayTransactions(transactions) {
+            let transactionsTable = document.getElementById('transactions');
+            transactions.forEach(tx => {
+                let newRow = transactionsTable.insertRow();
+                const value = `${web3.utils.fromWei(tx.value, 'ether')} ETH`; // Valor en ETH
+                const status = tx.isError === "0" ? 'Success' : 'Failed'; // Estado de la transacción
+
+                newRow.innerHTML = `
+                    <td><a href="https://etherscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a></td>
+                    <td>${value}</td>
+                    <td>${status}</td>
+                `;
+                console.log("Displayed transaction:", tx.hash);
+            });
+        }
+
+        // Función para agregar transacciones del contrato a la tabla
+        function addTransactionToTable(txDetails) {
+            let transactionsTable = document.getElementById('transactions');
+            let newRow = transactionsTable.insertRow();
+            
+            // Obtenemos los valores de la transacción
+            const user = txDetails.from; // Dirección desde la cual se envió la transacción
+            const date = new Date().toLocaleDateString(); // Fecha actual
+            const transaction = txDetails.txHash; // Hash de la transacción
+            const value = `${web3.utils.fromWei(txDetails.value, 'ether')} ETH`; // Valor en ETH
+            const status = txDetails.status === '0x1' ? 'Success' : 'Failed'; // Estado de la transacción
+            
+            newRow.innerHTML = `
+                <td>${user}</td>
+                <td>${date}</td>
+                <td><a href="https://etherscan.io/tx/${transaction}" target="_blank">${transaction}</a></td>
+                <td>${value}</td>
+                <td>${status}</td>
+            `;
+            console.log("Transaction added to table:", newRow.innerHTML);
+        }
+    </script>
+
+</body>
+</html>
